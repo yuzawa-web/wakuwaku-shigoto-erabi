@@ -1,0 +1,333 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>わくわく仕事えらび</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@500;700;900&family=BIZ+UDPGothic:wght@400;700&display=swap">
+<style>
+/* 1画面1問のカード式。結果は職員の「名札」に見立てて表示する */
+:root{
+  --bg:#F3F5FA; --surface:#FFFFFF; --fg:#1B2440; --muted:#5B6584;
+  --navy:#1F2F5C; --navy-soft:#E3E8F4; --red:#C8323C; --red-soft:#FBE7E8;
+  --line:#D5DBE9; --ok:#2F7D4F; --ok-soft:#E2F0E7; --on-navy:#FFFFFF;
+  --display:"Zen Maru Gothic","Hiragino Maru Gothic ProN","BIZ UDPGothic",sans-serif;
+  --body:"BIZ UDPGothic","Hiragino Sans","Yu Gothic",Meiryo,sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0F1524; --surface:#182138; --fg:#E7EBF5; --muted:#A3ADC8;
+  --navy:#93A9E6; --navy-soft:#24304F; --red:#F07078; --red-soft:#3A2028;
+  --line:#2C3756; --ok:#7DCB9C; --ok-soft:#1E3529; --on-navy:#0F1524; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0F1524; --surface:#182138; --fg:#E7EBF5; --muted:#A3ADC8;
+  --navy:#93A9E6; --navy-soft:#24304F; --red:#F07078; --red-soft:#3A2028;
+  --line:#2C3756; --ok:#7DCB9C; --ok-soft:#1E3529; --on-navy:#0F1524; color-scheme:dark}
+html,body{background:var(--bg)}
+body{color:var(--fg);font-family:var(--body);font-size:16px;line-height:1.75;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:24px 48px}
+.wrap{max-width:560px;margin:0 auto;display:flex;flex-direction:column;gap:20px}
+h1,h2,h3{font-family:var(--display);text-wrap:balance;margin:0;line-height:1.35}
+p{margin:0}
+.brand{display:flex;align-items:center;gap:10px;font-family:var(--display);font-weight:700;color:var(--navy);font-size:14px;letter-spacing:.08em}
+.brand i{width:10px;height:10px;border-radius:50%;background:var(--red);display:block}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:28px 22px;display:flex;flex-direction:column;gap:18px}
+.hero h1{font-size:clamp(30px,8vw,42px);font-weight:900;color:var(--navy)}
+.hero h1 em{font-style:normal;color:var(--red)}
+.lead{font-size:17px}
+.meta{display:flex;flex-wrap:wrap;gap:8px}
+.chip{font-size:13px;padding:4px 12px;border-radius:999px;background:var(--navy-soft);color:var(--navy);font-weight:700}
+.chip.ok{background:var(--ok-soft);color:var(--ok)}
+.btn{font-family:var(--display);font-weight:700;font-size:18px;border-radius:14px;padding:16px 20px;border:2px solid var(--navy);cursor:pointer;transition:transform .12s ease,background .12s;text-align:center;text-decoration:none;display:block}
+.btn:active{transform:scale(.97)}
+.btn:focus-visible{outline:3px solid var(--red);outline-offset:3px}
+.btn.primary{background:var(--navy);color:var(--on-navy)}
+.btn.ghost{background:transparent;color:var(--navy)}
+.btn.red{background:var(--red);border-color:var(--red);color:#fff}
+.small{font-size:13px;color:var(--muted)}
+/* 質問 */
+.prog{display:flex;align-items:center;gap:12px;font-size:14px;color:var(--muted);font-variant-numeric:tabular-nums}
+.bar{flex:1;height:8px;border-radius:99px;background:var(--navy-soft);overflow:hidden}
+.bar span{display:block;height:100%;background:var(--navy);border-radius:99px;transition:width .3s ease}
+.section-label{font-size:13px;font-weight:700;letter-spacing:.08em;color:var(--red)}
+.q{font-size:clamp(22px,6vw,27px);font-weight:700;min-height:3.2em;display:flex;align-items:center}
+.answers{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.answers .btn{font-size:22px;padding:22px 10px}
+.back{background:none;border:none;color:var(--muted);font-size:14px;cursor:pointer;align-self:flex-start;padding:4px 0;font-family:var(--body)}
+.back:disabled{visibility:hidden}
+.fade{animation:fade .25s ease}
+@keyframes fade{from{opacity:.4;transform:translateY(6px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.fade{animation:none}.bar span{transition:none}}
+/* 名札 */
+.badge{position:relative;background:var(--surface);border:2px solid var(--navy);border-radius:18px;padding:34px 22px 22px;display:flex;flex-direction:column;gap:12px;overflow:hidden}
+.badge::before{content:"";position:absolute;top:12px;left:50%;width:54px;height:9px;margin-left:-27px;border-radius:9px;background:var(--bg);border:2px solid var(--navy)}
+.badge::after{content:"";position:absolute;left:0;right:0;bottom:0;height:8px;background:var(--red)}
+.badge .kicker{font-size:13px;font-weight:700;color:var(--muted);letter-spacing:.1em;text-align:center}
+.badge h2{font-size:clamp(26px,7vw,34px);font-weight:900;color:var(--navy);text-align:center}
+.badge .job{font-family:var(--display);font-weight:700;font-size:18px;text-align:center}
+.badge .tags{display:flex;justify-content:center;flex-wrap:wrap;gap:8px}
+.match{display:flex;align-items:center;gap:10px;font-size:14px;color:var(--muted);font-variant-numeric:tabular-nums}
+.match .bar span{background:var(--red)}
+.dl{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;font-size:15px;margin:0}
+.dl dt{font-weight:700;color:var(--navy);white-space:nowrap}
+.dl dd{margin:0;min-width:0}
+.why{background:var(--navy-soft);border-radius:12px;padding:12px 14px;font-size:15px}
+.why b{color:var(--navy)}
+.why ul{margin:6px 0 0;padding-left:1.2em}
+.sub{display:flex;flex-direction:column;gap:10px}
+.mini{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:18px;display:flex;flex-direction:column;gap:8px}
+.mini .rank{font-size:12px;font-weight:700;color:var(--red);letter-spacing:.08em}
+.mini h3{font-size:20px;color:var(--navy)}
+.mini .job{font-weight:700}
+.cta{background:var(--navy);color:var(--on-navy);border-radius:20px;padding:24px 22px;display:flex;flex-direction:column;gap:14px}
+.cta h3{font-size:22px}
+.cta .btn{background:var(--red);border-color:var(--red);color:#fff}
+.notice{border:2px dashed var(--line);border-radius:14px;padding:12px 14px;font-size:14px;background:var(--surface);color:var(--fg)}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.row .btn{font-size:15px;padding:12px 8px}
+details{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:14px 18px}
+summary{cursor:pointer;font-family:var(--display);font-weight:700;color:var(--navy)}
+.all{list-style:none;padding:0;margin:12px 0 0;display:flex;flex-direction:column;gap:10px}
+.all li{border-top:1px solid var(--line);padding-top:10px;font-size:14px}
+.all li b{font-family:var(--display);color:var(--navy);font-size:15px}
+</style>
+</head>
+<body>
+
+
+<div class="wrap" id="app" aria-live="polite"></div>
+
+<script>
+/* ───────── 設定（ここを書きかえれば中身が変わります） ───────── */
+const VISIT_URL = ""; // 見学予約ページのアドレス。空のときは「準備中」と表示
+
+const TYPES = {
+  dayreha:{name:"いっしょに元気アップ型",job:"デイリハの介護スタッフ",free:true,lic:"資格なしでOK",
+    desc:"体操やマシン運動をみんなで楽しみながら、利用者さんの「歩ける」「続けられる」を支えます。明るく声をかけるのが得意な人にぴったり。",
+    place:"デイリハくるみ・デイリハ三橋"},
+  shumi:{name:"楽しみプロデューサー型",job:"デイサービスの介護スタッフ（趣味活動）",free:true,lic:"資格なしでOK",
+    desc:"手芸・歌・園芸・ゲームなど、毎日の「楽しい」をつくる仕事。あなたの得意なことや趣味が、そのまま活かせます。",
+    place:"趣味活動に力を入れているデイサービス"},
+  nyusho:{name:"暮らしまるごとパートナー型",job:"入所施設の介護スタッフ",free:true,lic:"資格なしでOK",
+    desc:"食事・入浴・おしゃべりなど、生活のそばで長く寄りそう仕事。毎日のちいさな変化に気づける人が活躍しています。",
+    place:"介護老人保健施設ル・サンク湯澤 など"},
+  houmonkaigo:{name:"おうちに笑顔をお届け型",job:"訪問介護員（ホームヘルパー）",free:false,lic:"介護職員初任者研修 以上",
+    desc:"利用者さんのご自宅にうかがい、家事や身の回りのお手伝いをします。一人ひとりの暮らし方に合わせて動ける人に向いています。",
+    place:"指定訪問介護事業所くるみ"},
+  kango:{name:"いのちを守るプロ型",job:"看護師（施設・クリニック）",free:false,lic:"看護師・准看護師",
+    desc:"健康の見守りや医療的なケアで、利用者さんと患者さんの毎日を支えます。病院とはちがう、ゆっくり関われる看護です。",
+    place:"ル・サンク湯澤・湯澤医院・花の丘キッズクリニック ほか"},
+  houmonkango:{name:"在宅ナース型",job:"訪問看護師",free:false,lic:"看護師・准看護師",
+    desc:"ご自宅でくらす方のもとへうかがい、看護を届けます。その人らしい生活を、医療の面から支える仕事です。",
+    place:"大宮西訪問看護ステーションくるみ ほか"},
+  reha:{name:"「できた！」応援団型",job:"リハビリ職（理学療法士・作業療法士・言語聴覚士）",free:false,lic:"理学療法士・作業療法士・言語聴覚士",
+    desc:"体の動きや食べる・話す力を、一緒に取りもどしていく仕事。目標を立てて、達成を一緒に喜べます。",
+    place:"ル・サンク湯澤・デイケアセンター みると ほか"},
+  eiyou:{name:"ごはんで元気メーカー型",job:"管理栄養士・栄養士",free:false,lic:"管理栄養士・栄養士",
+    desc:"一人ひとりの体の状態に合わせて、食事の内容や形を考えます。「食べる楽しみ」を守る専門職です。",
+    place:"ル・サンク湯澤 ほか"},
+  chouri:{name:"おいしい台所職人型",job:"調理スタッフ",free:true,lic:"資格なしでOK",
+    desc:"利用者さんや子どもたちの毎日のごはんをつくります。家での料理の経験がそのまま役に立ちます。",
+    place:"各施設の厨房"},
+  hoiku:{name:"ちいさな笑顔の味方型",job:"保育士",free:false,lic:"保育士",
+    desc:"子どもたちの毎日の「はじめて」に立ち会う仕事。職員のお子さんを預かる園なので、働く家族も一緒に支えます。",
+    place:"さくらナースリー・もみじナースリー"},
+  caremane:{name:"くらしの道案内型",job:"ケアマネジャー（介護支援専門員）",free:false,lic:"介護支援専門員",
+    desc:"ご本人やご家族の話を聞き、どんなサービスを使えば暮らしやすくなるかを一緒に考え、計画にまとめます。",
+    place:"居宅介護支援事業所くるみ・プライエボーリくるみ居宅介護支援事業所"},
+  soudan:{name:"つなぐ相談窓口型",job:"支援相談員・生活相談員",free:false,lic:"社会福祉士など（職場によってちがいます）",
+    desc:"入所や利用の相談の窓口です。ご家族・病院・職員をつなぎ、安心して利用を始められるように調整します。",
+    place:"ル・サンク湯澤・デイサービス各事業所 ほか"},
+  driver:{name:"みんなの安心ドライバー型",job:"送迎ドライバー",free:true,lic:"普通自動車免許だけでOK",
+    desc:"利用者さんをご自宅から施設まで、安全にお送りします。朝夕の短い時間から働けて、「ありがとう」を直接もらえる仕事です。",
+    place:"デイサービス・デイケア各事業所"},
+  chiiki:{name:"地域のかけはし型",job:"地域連携スタッフ",free:true,lic:"資格なしでOK（未経験歓迎）",
+    desc:"病院やケアマネジャーのもとを訪ね、博滇会の介護サービスをご紹介する仕事。売り込むより、相手の話をよく聞いて信頼関係を築くことが大切です。医療・介護の知識は入職後に学べます。",
+    place:"博滇会グループ（地域の病院・ケアマネジャーのもとへ訪問）"},
+  jimu:{name:"縁の下の名サポーター型",job:"事務スタッフ（医療事務・受付・本部事務）",free:true,lic:"資格なしでOK",
+    desc:"受付や書類、職員のサポートなど、現場が動きやすくなるように支える仕事。コツコツ型の人が頼りにされています。",
+    place:"湯澤医院・花の丘キッズクリニック・本部 ほか"}
+};
+
+/* 共通の質問：「はい」と答えたときに点数が入るお仕事 */
+const QUESTIONS = [
+  {t:"体を動かすのが好き？",w:{dayreha:3,nyusho:2,houmonkaigo:1,reha:2,driver:1,hoiku:1}},
+  {t:"歌・手芸・ゲームなど、みんなで楽しむことを考えるのが好き？",w:{shumi:3,hoiku:2,dayreha:1}},
+  {t:"初めて会う人とも、すぐにおしゃべりできる？",w:{chiiki:3,shumi:2,dayreha:2,soudan:2,jimu:1,houmonkaigo:1,driver:1}},
+  {t:"いろいろな場所に出かけて、新しい人と出会う仕事が楽しそう？",w:{chiiki:3,driver:1,houmonkaigo:1,houmonkango:1,caremane:1}},
+  {t:"ひとりの人と、じっくり長く関わりたい？",w:{nyusho:3,caremane:2,houmonkaigo:2,houmonkango:2,reha:1}},
+  {t:"料理をするのが好き？",w:{chouri:3,eiyou:2}},
+  {t:"食べることや健康の話に興味がある？",w:{eiyou:3,chouri:1,dayreha:1,kango:1}},
+  {t:"車の運転は苦にならない？",w:{driver:3,houmonkaigo:2,houmonkango:2,caremane:1}},
+  {t:"子どもと遊ぶとワクワクする？",w:{hoiku:3,kango:1}},
+  {t:"パソコンや書類の作業を、コツコツ続けるのが得意？",w:{jimu:3,caremane:2,soudan:1,eiyou:1}},
+  {t:"困っている人の話を聞いて、解決のしかたを一緒に考えたい？",w:{caremane:3,soudan:3,chiiki:2,kango:1}},
+  {t:"一人で考えて動くほうが気楽？",w:{houmonkaigo:2,houmonkango:2,driver:2,chouri:1,caremane:1}},
+  {t:"みんなでワイワイ働くのが好き？",w:{dayreha:2,shumi:2,nyusho:2,hoiku:1,chouri:1,chiiki:1}},
+  {t:"だれかの「できた！」を一緒に喜びたい？",w:{reha:3,dayreha:2,hoiku:2,nyusho:1}},
+  {t:"いつもとちがう様子に気づいて、落ち着いて動ける？",w:{kango:3,houmonkango:2,nyusho:1}},
+  {t:"まずは短い時間や、週に数日から始めたい？",w:{driver:2,chouri:2,houmonkaigo:1,dayreha:1,jimu:1}},
+  {t:"決まった手順を、きっちり守るのが得意？",w:{chouri:2,jimu:2,driver:2,eiyou:1}}
+];
+
+/* 資格の質問：最初の1問に「はい」のときだけ、残りを聞く */
+const LIC_GATE = {t:"医療・介護・保育・栄養などの資格を持っている？（取得見込みもふくむ）"};
+const LIC_QS = [
+  {t:"看護師・准看護師の資格がある？",opens:["kango","houmonkango"]},
+  {t:"理学療法士・作業療法士・言語聴覚士の資格がある？",opens:["reha"]},
+  {t:"保育士の資格がある？",opens:["hoiku"]},
+  {t:"管理栄養士・栄養士の資格がある？",opens:["eiyou"]},
+  {t:"ケアマネジャー・社会福祉士などの資格がある？",opens:["caremane","soudan"]},
+  {t:"介護福祉士・初任者研修など、介護の資格がある？",opens:["houmonkaigo"],bonus:{houmonkaigo:4,nyusho:2,dayreha:2,shumi:2}}
+];
+/* ─────────────────────────────────────────── */
+
+const app = document.getElementById("app");
+let steps, idx, answers;
+
+function buildSteps(){
+  steps = QUESTIONS.map((q,i)=>({kind:"q",i,t:q.t}));
+  steps.push({kind:"gate",t:LIC_GATE.t});
+  if(answers.gate===true) LIC_QS.forEach((q,i)=>steps.push({kind:"lic",i,t:q.t}));
+}
+function esc(s){return String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]))}
+
+function start(){
+  app.innerHTML = `
+  <div class="brand"><i></i>医療法人 博滇会グループ</div>
+  <section class="panel hero fade">
+    <h1>わくわく<br><em>仕事えらび</em></h1>
+    <p class="lead">「はい」「いいえ」で答えるだけ。博滇会の15のお仕事から、あなたに合うものを見つけます。</p>
+    <div class="meta">
+      <span class="chip">約3分</span><span class="chip">はい・いいえだけ</span><span class="chip ok">資格がなくてもOK</span>
+    </div>
+    <button class="btn primary" id="go">はじめる</button>
+    <p class="small">介護・看護・リハビリ・保育・栄養・調理・送迎・事務。いろいろな形で、地域の暮らしを支えています。</p>
+  </section>
+  ${allList()}`;
+  document.getElementById("go").onclick = ()=>{answers={q:{},gate:null,lic:{}};idx=0;buildSteps();ask();};
+}
+
+function ask(){
+  const s = steps[idx];
+  const total = steps.length + (answers.gate===null ? LIC_QS.length : 0);
+  const pct = Math.round(idx/total*100);
+  const label = s.kind==="q" ? "あなたのこと" : "さいごに、資格のこと";
+  app.innerHTML = `
+  <div class="brand"><i></i>わくわく仕事えらび</div>
+  <div class="prog"><span>${idx+1} 問目</span><div class="bar"><span style="width:${pct}%"></span></div></div>
+  <section class="panel fade">
+    <p class="section-label">${label}</p>
+    <p class="q">${esc(s.t)}</p>
+    <div class="answers">
+      <button class="btn primary" id="yes">はい</button>
+      <button class="btn ghost" id="no">いいえ</button>
+    </div>
+    <button class="back" id="back" ${idx===0?"disabled":""}>← ひとつ前にもどる</button>
+  </section>`;
+  document.getElementById("yes").onclick=()=>answer(true);
+  document.getElementById("no").onclick=()=>answer(false);
+  document.getElementById("back").onclick=()=>{ if(idx>0){ idx--; if(steps[idx].kind==="gate"){answers.lic={};} ask(); } };
+  document.getElementById("yes").focus({preventScroll:true});
+}
+
+function answer(v){
+  const s = steps[idx];
+  if(s.kind==="q") answers.q[s.i]=v;
+  else if(s.kind==="gate"){ answers.gate=v; answers.lic={}; buildSteps(); }
+  else answers.lic[s.i]=v;
+  idx++;
+  if(idx>=steps.length) result(); else ask();
+}
+
+function score(){
+  const sc={}, max={}, why={};
+  Object.keys(TYPES).forEach(k=>{sc[k]=0;max[k]=0;why[k]=[];});
+  QUESTIONS.forEach((q,i)=>{
+    Object.entries(q.w).forEach(([k,p])=>{ max[k]+=p; if(answers.q[i]){ sc[k]+=p; why[k].push({t:q.t,p}); } });
+  });
+  // 資格が必要なお仕事は、その資格に「はい」のときだけ候補にする（訪問介護は資格を取れば始められるので残す）
+  const open = new Set(Object.keys(TYPES).filter(k=>TYPES[k].free || k==="houmonkaigo"));
+  LIC_QS.forEach((q,i)=>{ if(answers.lic[i]){ q.opens.forEach(k=>open.add(k)); Object.entries(q.bonus||{}).forEach(([k,p])=>sc[k]+=p); } });
+  return Object.keys(TYPES).filter(k=>open.has(k)).map(k=>{
+    const ratio = max[k] ? Math.min(1, sc[k]/max[k]) : 0;
+    return {k, ratio, raw:sc[k], why:why[k].sort((a,b)=>b.p-a.p).slice(0,3)};
+  }).sort((a,b)=> b.ratio-a.ratio || b.raw-a.raw);
+}
+
+function pctOf(r){ return Math.max(35, Math.round(55 + r.ratio*45)); }
+
+function result(){
+  let list = score();
+  const allNo = Object.values(answers.q).every(v=>!v);
+  if(allNo){ // すべて「いいえ」のときは、始めやすいお仕事を案内
+    list = ["driver","jimu","chouri","dayreha"].map(k=>({k,ratio:.4,raw:0,why:[]}));
+  }
+  const [top,...rest] = list; const t = TYPES[top.k];
+  const noLic = answers.gate===false;
+  const lic = (x)=> TYPES[x].free ? `<span class="chip ok">${esc(TYPES[x].lic)}</span>` : `<span class="chip">資格：${esc(TYPES[x].lic)}</span>`;
+  const shareText = `わくわく仕事えらびの結果：わたしは「${t.name}」（${t.job}）でした！`;
+
+  app.innerHTML = `
+  <div class="brand"><i></i>わくわく仕事えらび　結果</div>
+  <article class="badge fade">
+    <p class="kicker">あなたにいちばん合うのは</p>
+    <h2>${esc(t.name)}</h2>
+    <p class="job">${esc(t.job)}</p>
+    <div class="tags">${lic(top.k)}</div>
+    <div class="match"><span>相性</span><div class="bar"><span style="width:${pctOf(top)}%"></span></div><span>${pctOf(top)}%</span></div>
+    <p>${esc(t.desc)}</p>
+    ${top.why.length?`<div class="why"><b>あなたの答えから</b><ul>${top.why.map(w=>`<li>${esc(w.t.replace(/？$/,""))} → はい</li>`).join("")}</ul></div>`:""}
+    <dl class="dl"><dt>働ける場所</dt><dd>${esc(t.place)}</dd></dl>
+  </article>
+
+  <section class="sub">
+    <p class="section-label">こちらも向いています</p>
+    ${rest.slice(0,2).map((r,i)=>`
+      <div class="mini">
+        <span class="rank">${i+2}位　相性 ${pctOf(r)}%</span>
+        <h3>${esc(TYPES[r.k].name)}</h3>
+        <p class="job">${esc(TYPES[r.k].job)}</p>
+        <div>${lic(r.k)}</div>
+        <p class="small">${esc(TYPES[r.k].desc)}</p>
+      </div>`).join("")}
+  </section>
+
+  ${noLic?`<div class="notice"><b>資格がなくても始められるお仕事</b><br>介護スタッフ（デイリハ・趣味活動・入所）、調理スタッフ、送迎ドライバー、事務スタッフ、地域連携スタッフ。訪問介護員は「介護職員初任者研修」を取ると始められます。</div>`:""}
+
+  <section class="cta">
+    <h3>まずは見学してみませんか？</h3>
+    <p>実際の職場の雰囲気を見てから決められます。「${esc(t.job)}」の見学をご案内します。</p>
+    ${VISIT_URL?`<a class="btn" href="${esc(VISIT_URL)}" target="_blank" rel="noopener">見学を予約する</a>`:`<button class="btn" id="visit">見学を予約する</button><p class="small" id="visitmsg" hidden style="color:var(--on-navy)">見学予約のページは準備中です。ここに予約ページへのリンクが入ります。</p>`}
+  </section>
+
+  <div class="row">
+    <button class="btn ghost" id="again">もう一度やる</button>
+    <button class="btn ghost" id="copy">結果をコピー</button>
+  </div>
+  ${allList()}`;
+
+  const v=document.getElementById("visit"); if(v) v.onclick=()=>{document.getElementById("visitmsg").hidden=false;};
+  document.getElementById("again").onclick=start;
+  const c=document.getElementById("copy");
+  c.onclick=()=>{
+    const done=()=>{c.textContent="コピーしました";setTimeout(()=>c.textContent="結果をコピー",1800)};
+    try{ navigator.clipboard.writeText(shareText).then(done).catch(()=>{c.textContent="コピーできませんでした"}); }
+    catch(e){ c.textContent="コピーできませんでした"; }
+  };
+  window.scrollTo({top:0});
+}
+
+function allList(){
+  return `<details><summary>博滇会のお仕事 全${Object.keys(TYPES).length}タイプを見る</summary>
+  <ul class="all">${Object.values(TYPES).map(t=>`<li><b>${esc(t.name)}</b><br>${esc(t.job)}　<span class="small">${esc(t.lic)}</span></li>`).join("")}</ul></details>`;
+}
+
+start();
+</script>
+
+</body>
+</html>
