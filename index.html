@@ -161,6 +161,8 @@ summary{cursor:pointer;font-family:var(--display);font-weight:700;color:var(--na
 
 <script>
 /* ───────── 設定（ここを書きかえれば中身が変わります） ───────── */
+/* 結果に出やすくしたいお仕事（1＝ふつう。数字を大きくすると出やすくなる） */
+const PRIORITY = {dayreha:1.15, shumi:1.15};
 const VISIT_URL = ""; // 見学予約ページのアドレス。空のときは「準備中」と表示
 
 const TYPES = {
@@ -213,21 +215,26 @@ const TYPES = {
 
 /* 共通の質問：「はい」と答えたときに点数が入るお仕事 */
 const QUESTIONS = [
+  {t:"おじいちゃん・おばあちゃんとおしゃべりするのが好き？",w:{dayreha:2,shumi:2,nyusho:2,houmonkaigo:1}},
+  {t:"体操やストレッチ、スポーツをするのが好き？",w:{dayreha:3,reha:1}},
+  {t:"手芸・工作・絵・園芸・音楽など、好きな趣味がある？",w:{shumi:3,hoiku:1}},
+  {t:"人を笑わせたり、その場を盛り上げたりするのが好き？",w:{shumi:3,dayreha:2,hoiku:1}},
   {t:"体を動かすのが好き？",w:{dayreha:3,nyusho:2,houmonkaigo:1,reha:2,driver:1,hoiku:1}},
   {t:"歌・手芸・ゲームなど、みんなで楽しむことを考えるのが好き？",w:{shumi:3,hoiku:2,dayreha:1}},
-  {t:"初めて会う人とも、すぐにおしゃべりできる？",w:{chiiki:3,shumi:2,dayreha:2,soudan:2,jimu:1,houmonkaigo:1,driver:1}},
-  {t:"いろいろな場所に出かけて、新しい人と出会う仕事が楽しそう？",w:{chiiki:3,driver:1,houmonkaigo:1,houmonkango:1,caremane:1}},
+  {t:"初めて会う人とも、すぐにおしゃべりできる？",w:{shumi:2,dayreha:2,soudan:2,chiiki:1,jimu:1,houmonkaigo:1,driver:1}},
+  {t:"いろいろな場所に出かけて、新しい人と出会う仕事が楽しそう？",w:{chiiki:2,driver:1,houmonkaigo:1,houmonkango:1,caremane:1}},
   {t:"ひとりの人と、じっくり長く関わりたい？",w:{nyusho:3,caremane:2,houmonkaigo:2,houmonkango:2,reha:1}},
   {t:"料理をするのが好き？",w:{chouri:3,eiyou:2}},
   {t:"食べることや健康の話に興味がある？",w:{eiyou:3,chouri:1,dayreha:1,kango:1}},
   {t:"車の運転は苦にならない？",w:{driver:3,houmonkaigo:2,houmonkango:2,caremane:1}},
   {t:"子どもと遊ぶとワクワクする？",w:{hoiku:3,kango:1}},
   {t:"パソコンや書類の作業を、コツコツ続けるのが得意？",w:{jimu:3,caremane:2,soudan:1,eiyou:1}},
-  {t:"困っている人の話を聞いて、解決のしかたを一緒に考えたい？",w:{caremane:3,soudan:3,chiiki:2,kango:1}},
+  {t:"困っている人の話を聞いて、解決のしかたを一緒に考えたい？",w:{caremane:3,soudan:3,chiiki:1,kango:1}},
   {t:"一人で考えて動くほうが気楽？",w:{houmonkaigo:2,houmonkango:2,driver:2,chouri:1,caremane:1}},
-  {t:"みんなでワイワイ働くのが好き？",w:{dayreha:2,shumi:2,nyusho:2,hoiku:1,chouri:1,chiiki:1}},
+  {t:"みんなでワイワイ働くのが好き？",w:{dayreha:2,shumi:2,nyusho:2,hoiku:1,chouri:1}},
   {t:"だれかの「できた！」を一緒に喜びたい？",w:{reha:3,dayreha:2,hoiku:2,nyusho:1}},
-  {t:"いつもとちがう様子に気づいて、落ち着いて動ける？",w:{kango:3,houmonkango:2,nyusho:1}},
+  {t:"周りの人の変化に気づくのが得意？",w:{kango:3,houmonkango:2,nyusho:1,dayreha:1,shumi:1}},
+  {t:"朝から夕方までの日勤（夜勤なし）で働きたい？",w:{dayreha:2,shumi:2,jimu:1,hoiku:1,chiiki:1}},
   {t:"まずは短い時間や、週に数日から始めたい？",w:{driver:2,chouri:2,houmonkaigo:1,dayreha:1,jimu:1}},
   {t:"決まった手順を、きっちり守るのが得意？",w:{chouri:2,jimu:2,driver:2,eiyou:1}}
 ];
@@ -335,8 +342,10 @@ function score(){
   LIC_QS.forEach((q,i)=>{ if(answers.lic[i]){ q.opens.forEach(k=>open.add(k)); Object.entries(q.bonus||{}).forEach(([k,p])=>sc[k]+=p); } });
   return Object.keys(TYPES).filter(k=>open.has(k)).map(k=>{
     const ratio = max[k] ? Math.min(1, sc[k]/max[k]) : 0;
-    return {k, ratio, raw:sc[k], why:why[k].sort((a,b)=>b.p-a.p).slice(0,3)};
-  }).sort((a,b)=> b.ratio-a.ratio || b.raw-a.raw);
+    // 並べる順番：質問の多いお仕事が不利にならないように調整し、PRIORITY をかける
+    const rank = (sc[k] / Math.pow(max[k]||1, 0.8)) * (PRIORITY[k]||1);
+    return {k, ratio, raw:sc[k], rank, why:why[k].sort((a,b)=>b.p-a.p).slice(0,3)};
+  }).sort((a,b)=> b.rank-a.rank || b.raw-a.raw);
 }
 function pctOf(r){ return Math.max(35, Math.round(55 + r.ratio*45)); }
 function pic(k){ const p=PHOTOS[k]; return p ? `<img src="${p.src}" alt="${esc(p.cap)}" loading="lazy">` : mark; }
